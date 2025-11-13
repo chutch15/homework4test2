@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Linked Scatterplot and Boxplot — Colton Hutchins</title>
+  <link rel="stylesheet" href="colton.css" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="colton.js" defer></script>
+</head>
+<body>
+  <h1>HW: Linked Scatterplot and Boxplot</h1>
+  <p>Colton Hutchins — chutch15@asu.edu</p>
+
+  <div id="control-panel">
+    <label>Dataset:</label>
+    <select id="dataset">
+      <option value="data/penguins.csv">Penguins Cleaned</option>
+      <option value="data/pokemon.csv">Pokemon with Stats</option>
+      <option value="/testing/data/Test1.csv">Test1 (hidden)</option>
+      <option value="/testing/data/Test2.csv">Test2 (hidden)</option>
+    </select>
+
+    <label>X Attribute:</label><select id="xAttr"></select>
+    <label>Y Attribute:</label><select id="yAttr"></select>
+    <label>Color:</label><select id="colorAttr"></select>
+    <label>Boxplot:</label><select id="boxAttr"></select>
+  </div>
+
+  <div id="charts">
+    <div id="scatter-container">
+      <h2>Scatter Plot</h2>
+      <svg id="scatter" width="650" height="500"></svg>
+      <p id="selected-count"></p>
+    </div>
+    <div id="box-container">
+      <h2>Box Plot</h2>
+      <svg id="boxplot" width="500" height="500"></svg>
+    </div>
+  </div>
+</body>
+</html>
