@@ -1,0 +1,19 @@
+body {
+  font-family: sans-serif;
+  margin: 20px;
+}
+#control-panel {
+  margin-bottom: 20px;
+}
+#charts {
+  display: flex;
+  gap: 40px;
+}
+svg {
+  border: 1px solid #aaa;
+  background: #fafafa;
+}
+circle.selected {
+  stroke: black;
+  stroke-width: 2;
+}
