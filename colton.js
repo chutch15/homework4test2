@@ -6,7 +6,6 @@ let margin = {top: 30, right: 30, bottom: 50, left: 50};
 let dataset, numericAttrs, categoricalAttrs, colorScale, selectedPoints = [];
 
 loadDataset(d3.select("#dataset").property("value"));
-
 d3.select("#dataset").on("change", e => loadDataset(e.target.value));
 
 async function loadDataset(path) {
@@ -36,6 +35,7 @@ function updateDropdown(selector, arr) {
 
 function drawScatter() {
   scatterSVG.selectAll("*").remove();
+
   let xAttr = d3.select("#xAttr").property("value");
   let yAttr = d3.select("#yAttr").property("value");
   let colorAttr = d3.select("#colorAttr").property("value");
@@ -43,6 +43,7 @@ function drawScatter() {
   let xScale = d3.scaleLinear()
     .domain(d3.extent(dataset, d => d[xAttr])).nice()
     .range([margin.left, width]);
+
   let yScale = d3.scaleLinear()
     .domain(d3.extent(dataset, d => d[yAttr])).nice()
     .range([height, margin.top]);
@@ -58,12 +59,12 @@ function drawScatter() {
     .call(d3.axisLeft(yScale));
 
   scatterSVG.append("text")
-    .attr("x", width/2)
+    .attr("x", width / 2)
     .attr("y", height + 40)
     .text(xAttr);
 
   scatterSVG.append("text")
-    .attr("x", -height/2)
+    .attr("x", -height / 2)
     .attr("y", 15)
     .attr("transform", "rotate(-90)")
     .text(yAttr);
@@ -78,8 +79,9 @@ function drawScatter() {
     .attr("fill", d => colorScale(d[colorAttr]))
     .attr("opacity", 0.8);
 
+  // Brushing (rectangular lasso)
   let brush = d3.brush()
-    .extent([[margin.left, margin.top],[width, height]])
+    .extent([[margin.left, margin.top], [width, height]])
     .on("end", brushed);
 
   scatterSVG.append("g").call(brush);
@@ -103,25 +105,39 @@ function drawScatter() {
   }
 }
 
+// ------------------------------
+// FIXED BOX PLOT IMPLEMENTATION
+// ------------------------------
 function drawBoxplot(points) {
   boxSVG.selectAll("*").remove();
-  if (points.length === 0) return;
+
+  if (points.length === 0) return; // nothing selected
+
   let boxAttr = d3.select("#boxAttr").property("value");
   let colorAttr = d3.select("#colorAttr").property("value");
 
+  console.log("Drawing boxplot for", boxAttr, "from", points.length, "points");
+
+  // Group selected points by the color attribute
   let groups = d3.group(points, d => d[colorAttr]);
   let groupNames = Array.from(groups.keys());
+
+  // Compute box stats for each group
   let boxData = groupNames.map(g => {
     let vals = groups.get(g).map(d => d[boxAttr]).sort(d3.ascending);
-    if (vals.length < 5) return {key: g, vals};
+    if (vals.length === 0) return { key: g, empty: true };
+
     let q1 = d3.quantile(vals, 0.25),
         median = d3.quantile(vals, 0.5),
-        q3 = d3.quantile(vals, 0.75),
-        iqr = q3 - q1;
-    let min = q1 - 1.5*iqr, max = q3 + 1.5*iqr;
-    return {key: g, q1, median, q3, min: d3.min(vals), max: d3.max(vals)};
+        q3 = d3.quantile(vals, 0.75);
+    let iqr = q3 - q1;
+    let min = Math.max(d3.min(vals), q1 - 1.5 * iqr);
+    let max = Math.min(d3.max(vals), q3 + 1.5 * iqr);
+
+    return { key: g, q1, median, q3, min, max };
   });
 
+  // Scales
   let xScale = d3.scaleBand()
     .domain(groupNames)
     .range([margin.left, 400])
@@ -131,6 +147,7 @@ function drawBoxplot(points) {
     .domain(d3.extent(dataset, d => d[boxAttr])).nice()
     .range([height, margin.top]);
 
+  // Axes
   boxSVG.append("g")
     .attr("transform", `translate(0,${height})`)
     .call(d3.axisBottom(xScale));
@@ -138,39 +155,55 @@ function drawBoxplot(points) {
     .attr("transform", `translate(${margin.left},0)`)
     .call(d3.axisLeft(yScale));
 
-  let boxGroup = boxSVG.append("g")
+  // Box groups
+  let gBoxes = boxSVG.append("g")
     .selectAll(".box")
     .data(boxData)
     .join("g")
     .attr("class", "box")
     .attr("transform", d => `translate(${xScale(d.key)},0)`);
 
-  boxGroup.transition().delay((d,i)=>i*150)
-    .duration(800)
-    .ease(d3.easeCubic)
-    .each(function(d) {
+  // Draw boxes for non-empty groups
+  gBoxes.filter(d => !d.empty)
+    .each(function(d, i) {
       let g = d3.select(this);
-      if (!d.q1) return; 
+
+      // Whisker
       g.append("line")
-        .attr("x1", xScale.bandwidth()/2)
-        .attr("x2", xScale.bandwidth()/2)
+        .attr("x1", xScale.bandwidth() / 2)
+        .attr("x2", xScale.bandwidth() / 2)
         .attr("y1", yScale(d.min))
         .attr("y2", yScale(d.max))
-        .attr("stroke", "#333");
+        .attr("stroke", "#333")
+        .attr("stroke-width", 1);
 
+      // Box
       g.append("rect")
         .attr("x", 0)
         .attr("width", xScale.bandwidth())
         .attr("y", yScale(d.q3))
         .attr("height", yScale(d.q1) - yScale(d.q3))
         .attr("fill", colorScale(d.key))
-        .attr("opacity", 0.7);
+        .attr("opacity", 0.7)
+        .transition()
+        .duration(600)
+        .delay(i * 100)
+        .attr("opacity", 1);
 
+      // Median line
       g.append("line")
         .attr("x1", 0)
         .attr("x2", xScale.bandwidth())
         .attr("y1", yScale(d.median))
         .attr("y2", yScale(d.median))
-        .attr("stroke", "black");
+        .attr("stroke", "black")
+        .attr("stroke-width", 2);
     });
+
+  // Group labels
+  gBoxes.append("text")
+    .attr("x", xScale.bandwidth() / 2)
+    .attr("y", height + 30)
+    .attr("text-anchor", "middle")
+    .text(d => d.key);
 }
