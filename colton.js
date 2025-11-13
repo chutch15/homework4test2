@@ -148,9 +148,18 @@ function drawBoxplot(points) {
     .range([height, margin.top]);
 
   // Axes
-  boxSVG.append("g")
+  let xAxis = boxSVG.append("g")
     .attr("transform", `translate(0,${height})`)
     .call(d3.axisBottom(xScale));
+
+  // Rotate x-axis labels for readability
+  xAxis.selectAll("text")
+    .attr("text-anchor", "end")
+    .attr("transform", "rotate(-45)")
+    .attr("dx", "-0.6em")
+    .attr("dy", "0.2em")
+    .style("font-size", "12px");
+
   boxSVG.append("g")
     .attr("transform", `translate(${margin.left},0)`)
     .call(d3.axisLeft(yScale));
@@ -200,10 +209,5 @@ function drawBoxplot(points) {
         .attr("stroke-width", 2);
     });
 
-  // Group labels
-  gBoxes.append("text")
-    .attr("x", xScale.bandwidth() / 2)
-    .attr("y", height + 30)
-    .attr("text-anchor", "middle")
-    .text(d => d.key);
+  // ✅ Removed manual labels (duplicate category text)
 }
